@@ -1751,16 +1751,23 @@ fn deserialize_untagged_enum_after(
     let fallthrough_msg = cattrs.expecting().unwrap_or(&fallthrough_msg);
 
     quote_block! {
+        let mut __errors = Vec::<__D::Error>::new();
+
         let __content = <_serde::__private::de::Content as _serde::Deserialize>::deserialize(__deserializer)?;
         let __deserializer = _serde::__private::de::ContentRefDeserializer::<__D::Error>::new(&__content);
 
         #(
-            if let _serde::__private::Ok(__ok) = #attempts {
-                return _serde::__private::Ok(__ok);
+            match #attempts {
+                _serde::__private::Ok(__ok) => return _serde::__private::Ok(__ok),
+                _serde::__private::Err(__err) => __errors.push(__err),
             }
         )*
 
-        _serde::__private::Err(_serde::de::Error::custom(#fallthrough_msg))
+        let __variant_errors: Vec<String> = __errors.into_iter().map(|e|e.to_string()).collect();
+
+        _serde::__private::Err(_serde::de::Error::custom(
+            format!("{} ({})", #fallthrough_msg, __variant_errors.join("/"))
+        ))
     }
 }
 

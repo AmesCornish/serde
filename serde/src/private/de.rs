@@ -1411,6 +1411,10 @@ mod content {
                 Content::Map(v) => visit_content_map(v, visitor),
                 _ => Err(self.invalid_type(&visitor)),
             }
+            .map_err(|e| {
+                eprintln!(" in {_name}");
+                e
+            })
         }
 
         fn deserialize_enum<V>(
